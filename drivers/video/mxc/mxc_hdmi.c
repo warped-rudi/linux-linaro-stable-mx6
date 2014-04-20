@@ -1304,7 +1304,6 @@ static void hdmi_config_AVI(struct mxc_hdmi *hdmi)
 {
 	u8 val;
 	u8 pix_fmt;
-	u8 under_scan;
 	u8 act_ratio, coded_ratio, colorimetry, ext_colorimetry;
 	struct fb_videomode mode;
 	const struct fb_videomode *edid_mode;
@@ -1333,16 +1332,12 @@ static void hdmi_config_AVI(struct mxc_hdmi *hdmi)
 	else
 		pix_fmt = HDMI_FC_AVICONF0_PIX_FMT_RGB;
 
-	if (hdmi->edid_cfg.cea_underscan)
-		under_scan = HDMI_FC_AVICONF0_SCAN_INFO_UNDERSCAN;
-	else
-		under_scan =  HDMI_FC_AVICONF0_SCAN_INFO_NODATA;
-
 	/*
 	 * Active format identification data is present in the AVI InfoFrame.
 	 * Under scan info, no bar data
 	 */
-	val = pix_fmt | under_scan |
+	val = pix_fmt | 
+		HDMI_FC_AVICONF0_SCAN_INFO_UNDERSCAN |
 		HDMI_FC_AVICONF0_ACTIVE_FMT_INFO_PRESENT |
 		HDMI_FC_AVICONF0_BAR_DATA_NO_DATA;
 
