@@ -324,6 +324,10 @@ static void spdif_write_channel_status(struct fsl_spdif_priv *spdif_priv)
 	regmap_write(regmap, REG_SPDIF_STCSCL, ch_status);
 
 	dev_dbg(&pdev->dev, "STCSCL: 0x%06x\n", ch_status);
+
+	/* Set outgoing validity off for non-audio */
+	regmap_update_bits(regmap, REG_SPDIF_SCR, SCR_VAL_MASK, 
+			   (ctrl->ch_status[0] & IEC958_AES0_NONAUDIO) ? SCR_VAL_CLEAR : 0);
 }
 
 /* Set SPDIF PhaseConfig register for rx clock */
@@ -1188,8 +1192,7 @@ static int fsl_spdif_probe(struct platform_device *pdev)
 	spin_lock_init(&ctrl->ctl_lock);
 
 	/* Init tx channel status default value */
-	ctrl->ch_status[0] =
-		IEC958_AES0_CON_NOT_COPYRIGHT | IEC958_AES0_CON_EMPHASIS_5015;
+	ctrl->ch_status[0] = IEC958_AES0_CON_NOT_COPYRIGHT;
 	ctrl->ch_status[1] = IEC958_AES1_CON_DIGDIGCONV_ID;
 	ctrl->ch_status[2] = 0x00;
 	ctrl->ch_status[3] =
