@@ -316,7 +316,8 @@ static void fsl_hdmi_get_playback_channels(void)
 
 	/* Always assume basic audio support */
 	playback_channels[i++] = channels;
-	channels += 2;
+	/* Don't allow 4 channel mode because currently we can't map it correctly to CEA */
+	channels += 4;
 
 	while ((i < HDMI_MAX_CHANNEL_CONSTRAINTS) &&
 			(channels <= edid_cfg.max_channels)) {
