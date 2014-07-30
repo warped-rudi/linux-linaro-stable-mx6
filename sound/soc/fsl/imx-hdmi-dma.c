@@ -281,8 +281,8 @@ static void init_table(int channels)
 	}
 
 	for (i = 0; i < 24; i++) {
-		g_channel_remap_table[i] = 
-			(i / channels) * channels + remap_offsets[i % channels];
+		g_channel_remap_table[i] = (channels >= 6) ?
+			((i / channels) * channels + remap_offsets[i % channels]) : i;
 	}
 }
 
@@ -553,8 +553,8 @@ static int hdmi_dma_set_thrsld_incrtype(struct device *dev, int channels)
 
 static int hdmi_dma_configure_dma(struct device *dev, int channels)
 {
-	u8 i, val = 0;
 	int ret;
+	static u8 chan_enable[] = { 0x00, 0x03, 0x33, 0x3f, 0xff };
 
 	if (channels <= 0 || channels > 8 || channels % 2 != 0) {
 		dev_err(dev, "unsupported channel number: %d\n", channels);
@@ -567,10 +567,7 @@ static int hdmi_dma_configure_dma(struct device *dev, int channels)
 	if (ret)
 		return ret;
 
-	for (i = 0; i < channels; i += 2)
-		val |= 0x3 << i;
-
-	hdmi_writeb(val, HDMI_AHB_DMA_CONF1);
+	hdmi_writeb(chan_enable[channels/2], HDMI_AHB_DMA_CONF1);
 
 	return 0;
 }
@@ -669,16 +666,20 @@ static int hdmi_dma_copy(struct snd_pcm_substream *substream, int channel,
 	struct hdmi_dma_priv *priv = runtime->private_data;
 	unsigned int count = frames_to_bytes(runtime, frames);
 	unsigned int pos_bytes = frames_to_bytes(runtime, pos);
-	int channel_no, pcm_idx, subframe_no, bits_left, sample_bits;
+	int channel_no, pcm_idx, subframe_no, bits_left, sample_bits, map_sel;
 	u32 pcm_data[8], pcm_temp, *hw_buf, sample_block;
 	
-	static int channel_map_pcm[8] =	{ 0, 1, 4, 5, 3, 2, 6, 7 };
+	static int channel_map_pcm[2][8] = { 
+		{ 0, 1, 2, 3, 4, 5, 6, 7 },	/* no remapping */
+		{ 0, 1, 4, 5, 3, 2, 6, 7 }	/* standard ALSA to CEA */
+	};
 
 	/* Adding frame info to pcm data from userspace and copy to hw_buffer */
 	hw_buf = (u32 *)(priv->hw_buffer.area + (pos_bytes * priv->buffer_ratio));
 
 	sample_bits = priv->sample_align * 8;
 	sample_block = priv->sample_align * priv->channels;
+	map_sel = (priv->channels >= 6 && iec_header.B.linear_pcm == 0) ? 1 : 0;
 
 	while (count > 0) {
 		if (copy_from_user(pcm_data, buf, sample_block))
@@ -693,8 +694,7 @@ static int hdmi_dma_copy(struct snd_pcm_substream *substream, int channel,
 			bits_left = 32;
 			for (;;) {
 				/* re-map channels */
-				subframe_no = (iec_header.B.linear_pcm == 0) ? 
-							channel_map_pcm[channel_no] : channel_no;
+				subframe_no = channel_map_pcm[map_sel][channel_no];
 
 				/* Save the header info to the audio dma buffer */
 				hw_buf[subframe_no] = hdmi_dma_add_frame_info(priv, pcm_temp, subframe_no + 1);
