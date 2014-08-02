@@ -246,7 +246,7 @@ static u32 hdmi_dma_add_frame_info(struct hdmi_dma_priv *priv,
 
 	/* fill c (channel status) */
 	if (priv->frame_idx < 42) {
-		iec_header.B.channel = subframe_idx;
+		iec_header.B.channel = (iec_header.B.linear_pcm == 0) ? subframe_idx : 0;
 		subframe.B.c = iec_header.U >> priv->frame_idx;
 	}
 	
