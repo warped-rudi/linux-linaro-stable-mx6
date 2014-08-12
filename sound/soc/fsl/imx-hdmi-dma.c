@@ -883,6 +883,7 @@ static int hdmi_dma_hw_params(struct snd_pcm_substream *substream,
 	init_table(priv->channels);
 
 	priv->appl_bytes = 0;
+	priv->frame_idx = 0;
 
 	return 0;
 }
@@ -910,8 +911,6 @@ static void hdmi_dma_trigger_init(struct snd_pcm_substream *substream,
 		iec_header.B.sample_freq = 0x09;
 		iec_header.B.org_sample_freq = 0x00;
 	}
-
-	priv->frame_idx = 0;
 
 	/* Copy data by buffer_bytes */
 	hdmi_dma_data_copy(substream, priv, 'b');
@@ -956,13 +955,13 @@ static int hdmi_dma_trigger(struct snd_pcm_substream *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
-	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		if (!check_hdmi_state())
 			return 0;
 		hdmi_dma_trigger_init(substream, priv);
 
 		dumpregs(dev);
 
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		priv->tx_active = true;
 		hdmi_audio_writeb(AHB_DMA_START, START, 0x1);
 		hdmi_dma_irq_set(false);
