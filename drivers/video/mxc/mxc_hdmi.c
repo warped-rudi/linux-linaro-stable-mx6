@@ -446,8 +446,8 @@ static void hdmi_video_sample(struct mxc_hdmi *hdmi)
 
 static int isColorSpaceConversion(struct mxc_hdmi *hdmi)
 {
-	return (hdmi->hdmi_data.enc_in_format !=
-		hdmi->hdmi_data.enc_out_format);
+	return (hdmi->hdmi_data.enc_in_format != hdmi->hdmi_data.enc_out_format) ||
+		(hdmi->hdmi_data.enc_out_format == RGB && !hdmi->hdmi_data.video_mode.mDVI && hdmi->vic != 0);
 }
 
 static int isColorSpaceDecimation(struct mxc_hdmi *hdmi)
@@ -476,7 +476,25 @@ static void update_csc_coeffs(struct mxc_hdmi *hdmi)
 
 	if (isColorSpaceConversion(hdmi)) { /* csc needed */
 		if (hdmi->hdmi_data.enc_out_format == RGB) {
-			if (hdmi->hdmi_data.colorimetry == eITU601) {
+			if (hdmi->hdmi_data.enc_in_format == RGB) {
+				csc_coeff[0][0] = 0x1b7b;
+				csc_coeff[0][1] = 0x0000;
+				csc_coeff[0][2] = 0x0000;
+				csc_coeff[0][3] = 0x0020;
+
+				csc_coeff[1][0] = 0x0000;
+				csc_coeff[1][1] = 0x1b7b;
+				csc_coeff[1][2] = 0x0000;
+				csc_coeff[1][3] = 0x0020;
+
+				csc_coeff[2][0] = 0x0000;
+				csc_coeff[2][1] = 0x0000;
+				csc_coeff[2][2] = 0x1b7b;
+				csc_coeff[2][3] = 0x0020;
+
+				csc_scale = 1;
+				coeff_selected = true;
+			} else if (hdmi->hdmi_data.colorimetry == eITU601) {
 				csc_coeff[0][0] = 0x2000;
 				csc_coeff[0][1] = 0x6926;
 				csc_coeff[0][2] = 0x74fd;
