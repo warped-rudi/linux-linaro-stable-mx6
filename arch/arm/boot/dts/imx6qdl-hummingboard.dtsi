@@ -1,5 +1,8 @@
 /*
- * Copyright (C) 2014 Russell King
+ * Copyright (C) 2013 Russell King
+ *
+ * The code contained herein is licensed under the GNU General Public
+ * License version 2.
  */
 #include "imx6qdl-microsom.dtsi"
 #include "imx6qdl-microsom-ar8035.dtsi"
@@ -11,23 +14,9 @@
 
 	ir_recv: ir-receiver {
 		compatible = "gpio-ir-receiver";
-		gpios = <&gpio3 9 1>;
+		gpios = <&gpio1 2 1>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_cubox_i_ir>;
-	};
-
-	pwmleds {
-		compatible = "pwm-leds";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_cubox_i_pwm1>;
-
-		front {
-			active-low;
-			default-brightness = <128>;
-			label = "imx6:red:front";
-			max-brightness = <248>;
-			pwms = <&pwm1 0 50000>;
-		};
+		pinctrl-0 = <&pinctrl_hummingboard_gpio1_2>;
 	};
 
 	regulators {
@@ -38,7 +27,11 @@
 			regulator-name = "3P3V";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
-			regulator-always-on;
+			gpio = <&gpio4 30 0>;
+			startup-delay-us = <10000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_hummingboard_sd_reg_en>;
+			enable-at-boot;
 		};
 
 		reg_usbh1_vbus: usb-h1-vbus {
@@ -46,7 +39,7 @@
 			enable-active-high;
 			gpio = <&gpio1 0 0>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_cubox_i_usbh1_vbus>;
+			pinctrl-0 = <&pinctrl_hummingboard_usbh1_vbus>;
 			regulator-name = "usb_h1_vbus";
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
@@ -57,7 +50,7 @@
 			enable-active-high;
 			gpio = <&gpio3 22 0>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_cubox_i_usbotg_vbus>;
+			pinctrl-0 = <&pinctrl_hummingboard_usbotg_vbus>;
 			regulator-name = "usb_otg_vbus";
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
@@ -67,7 +60,7 @@
 	codec: spdif-transmitter {
 		compatible = "linux,spdif-dit";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_cubox_i_spdif>;
+		pinctrl-0 = <&pinctrl_hummingboard_spdif>;
 	};
 
 	imx-drm {
@@ -79,6 +72,7 @@
 	sound-spdif {
 		compatible = "fsl,imx-audio-spdif";
 		model = "imx-spdif";
+		/* IMX6 doesn't implement this yet */
 		spdif-controller = <&spdif>;
 		spdif-out;
 	};
@@ -90,7 +84,7 @@
                 hdmi-controller = <&hdmi_audio>;
         };
 
-        mxcfb1: mxc_sdc_fb@0 { 
+        mxcfb1: mxc_sdc_fb@0 {
                 compatible = "fsl,mxc_sdc_fb";
                 disp_dev = "hdmi";
                 interface_pix_fmt = "RGB24";
@@ -123,9 +117,15 @@
         };
 };
 
+&flexcan1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hummingboard_flexcan1>;
+	status = "okay";
+};
+
 &hdmi {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_cubox_i_hdmi>;
+	pinctrl-0 = <&pinctrl_hummingboard_hdmi>;
 	ddc = <&i2c2>;
 	status = "okay";
 	crtcs = <&ipu1 0>;
@@ -137,7 +137,7 @@
 
 &hdmi_cec {
         pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_cubox_i_hdmi>;
+        pinctrl-0 = <&pinctrl_hummingboard_hdmi>;
         status = "okay";
 };
 
@@ -156,6 +156,18 @@
         status = "okay";
 };
 
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c1_1>;
+
+	status = "okay";
+
+	rtc: pcf8523@68 {
+		compatible = "nxp,pcf8523";
+		reg = <0x68>;
+	};
+};
+
 &i2c2 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
@@ -168,51 +180,53 @@
 	pinctrl-0 = <&pinctrl_i2c3_1>;
 
 	status = "okay";
-
-	rtc: pcf8523@68 {
-		compatible = "nxp,pcf8523";
-		reg = <0x68>;
-	};
 };
 
 &iomuxc {
-	cubox_i {
-		pinctrl_cubox_i_ir: cubox-i-ir {
+	hummingboard {
+		pinctrl_hummingboard_flexcan1: hummingboard-flexcan1 {
 			fsl,pins = <
-				MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000
+				MX6QDL_PAD_SD3_CLK__FLEXCAN1_RX 0x80000000
+				MX6QDL_PAD_SD3_CMD__FLEXCAN1_TX 0x80000000
 			>;
 		};
 
-		pinctrl_cubox_i_hdmi: cubox-i-hdmi {
+		pinctrl_hummingboard_gpio1_2: hummingboard-gpio1_2 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000
+			>;
+		};
+
+		pinctrl_hummingboard_hdmi: hummingboard-hdmi {
 			fsl,pins = <
 				MX6QDL_PAD_KEY_ROW2__HDMI_TX_CEC_LINE 0x1f8b0
 			>;
 		};
 
-		pinctrl_cubox_i_pwm1: cubox-i-pwm1-front-led {
-			fsl,pins = <MX6QDL_PAD_DISP0_DAT8__PWM1_OUT 0x1b0b0>;
+		pinctrl_hummingboard_spdif: hummingboard-spdif {
+			fsl,pins = <MX6QDL_PAD_GPIO_17__SPDIF_OUT 0x91>;
 		};
 
-		pinctrl_cubox_i_spdif: cubox-i-spdif {
-			fsl,pins = <MX6QDL_PAD_GPIO_17__SPDIF_OUT 0x1b0b0>;
+		pinctrl_hummingboard_sd_reg_en: hummingboard-sd-reg-en {
+			fsl,pins = <MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30 0x130b0>;
 		};
 
-		pinctrl_cubox_i_usbh1_vbus: cubox-i-usbh1-vbus {
+		pinctrl_hummingboard_usbh1_vbus: hummingboard-usbh1-vbus {
 			fsl,pins = <MX6QDL_PAD_GPIO_0__GPIO1_IO00 0x1b0b0>;
 		};
 
-		pinctrl_cubox_i_usbotg_vbus: cubox-i-usbotg-vbus {
+		pinctrl_hummingboard_usbotg_vbus: hummingboard-usbotg-vbus {
 			fsl,pins = <MX6QDL_PAD_EIM_D22__GPIO3_IO22 0x1b0b0>;
 		};
 
-		pinctrl_cubox_i_usdhc2_aux: cubox-i-usdhc2-aux {
+		pinctrl_hummingboard_usdhc2_aux: hummingboard-usdhc2-aux {
 			fsl,pins = <
 				MX6QDL_PAD_GPIO_4__GPIO1_IO04    0x1f071
 				MX6QDL_PAD_KEY_ROW1__SD2_VSELECT 0x1b071
 			>;
 		};
 
-		pinctrl_cubox_i_usdhc2: cubox-i-usdhc2 {
+		pinctrl_hummingboard_usdhc2: hummingboard-usdhc2 {
 			fsl,pins = <
 				MX6QDL_PAD_SD2_CMD__SD2_CMD    0x17059
 				MX6QDL_PAD_SD2_CLK__SD2_CLK    0x10059
@@ -223,7 +237,7 @@
 			>;
 		};
 
-		pinctrl_cubox_i_usdhc2_100mhz: cubox-i-usdhc2-100mhz {
+		pinctrl_hummingboard_usdhc2_100mhz: hummingboard-usdhc2-100mhz {
 			fsl,pins = <
 				MX6QDL_PAD_SD2_CMD__SD2_CMD    0x170b9
 				MX6QDL_PAD_SD2_CLK__SD2_CLK    0x100b9
@@ -234,7 +248,7 @@
 			>;
 		};
 
-		pinctrl_cubox_i_usdhc2_200mhz: cubox-i-usdhc2-200mhz {
+		pinctrl_hummingboard_usdhc2_200mhz: hummingboard-usdhc2-200mhz {
 			fsl,pins = <
 				MX6QDL_PAD_SD2_CMD__SD2_CMD    0x170f9
 				MX6QDL_PAD_SD2_CLK__SD2_CLK    0x100f9
@@ -244,8 +258,15 @@
 				MX6QDL_PAD_SD2_DAT3__SD2_DATA3 0x130f9
 			>;
 		};
-		pinctrl_cubox_i_usbotg: cubox-i-usbotg {
-			fsl,pins = <MX6QDL_PAD_GPIO_1__USB_OTG_ID 0x13059>;
+		pinctrl_hummingboard_usbotg: hummingboard-usbotg {
+			/*
+			 * RX_ER is on third header on i.MX6 which is not used.
+			 * This method specifices USB OTG ID as on RX_ER
+			 * and internally pull it down thus forcing
+			 * it to be host.
+			 */
+
+			fsl,pins = <MX6QDL_PAD_ENET_RX_ER__USB_OTG_ID 0x13059>;
 		};
 	};
 };
@@ -271,7 +292,7 @@
 
 &usbotg {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_cubox_i_usbotg>;
+	pinctrl-0 = <&pinctrl_hummingboard_usbotg>;
 	vbus-supply = <&reg_usbotg_vbus>;
 	status = "okay";
 };
@@ -294,11 +315,10 @@
 
 &usdhc2 {
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
-	pinctrl-0 = <&pinctrl_cubox_i_usdhc2_aux &pinctrl_cubox_i_usdhc2>;
-	pinctrl-1 = <&pinctrl_cubox_i_usdhc2_aux &pinctrl_cubox_i_usdhc2_100mhz>;
-	pinctrl-2 = <&pinctrl_cubox_i_usdhc2_aux &pinctrl_cubox_i_usdhc2_200mhz>;
+	pinctrl-0 = <&pinctrl_hummingboard_usdhc2_aux &pinctrl_hummingboard_usdhc2>;
+	pinctrl-1 = <&pinctrl_hummingboard_usdhc2_aux &pinctrl_hummingboard_usdhc2_100mhz>;
+	pinctrl-2 = <&pinctrl_hummingboard_usdhc2_aux &pinctrl_hummingboard_usdhc2_200mhz>;
 	vmmc-supply = <&reg_3p3v>;
 	cd-gpios = <&gpio1 4 0>;
-	no-1-8-v;
 	status = "okay";
 };
