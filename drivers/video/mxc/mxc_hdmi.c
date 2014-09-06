@@ -447,7 +447,7 @@ static void hdmi_video_sample(struct mxc_hdmi *hdmi)
 static int isColorSpaceConversion(struct mxc_hdmi *hdmi)
 {
 	return (hdmi->hdmi_data.enc_in_format != hdmi->hdmi_data.enc_out_format) ||
-		(hdmi->hdmi_data.enc_out_format == RGB && !hdmi->hdmi_data.video_mode.mDVI && hdmi->vic != 0);
+		(hdmi->hdmi_data.enc_out_format == RGB && !hdmi->hdmi_data.video_mode.mDVI && hdmi->vic > 1);
 }
 
 static int isColorSpaceDecimation(struct mxc_hdmi *hdmi)
