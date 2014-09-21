@@ -123,8 +123,9 @@ static void null_restart(enum reboot_mode reboot_mode, const char *cmd)
  */
 static void cpu_halt(void)
 {
+	clockevents_suspend();
+
 	local_irq_disable();
-	
 	while (1)
 		cpu_do_idle();
 }
