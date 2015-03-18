@@ -24,8 +24,6 @@
 
 #include <linux/err.h>
 
-#include <linux/wl12xx.h>
-
 #include "../wlcore/wlcore.h"
 #include "../wlcore/debug.h"
 #include "../wlcore/io.h"
@@ -1774,7 +1772,6 @@ static int wl12xx_setup(struct wl1271 *wl)
 {
 	struct wl12xx_priv *priv = wl->priv;
 	struct wlcore_platdev_data *pdev_data = dev_get_platdata(&wl->pdev->dev);
-	struct wl12xx_platform_data *pdata = pdev_data->pdata;
 
 	BUILD_BUG_ON(WL12XX_MAX_LINKS > WLCORE_MAX_LINKS);
 	BUILD_BUG_ON(WL12XX_MAX_AP_STATIONS > WL12XX_MAX_LINKS);
@@ -1799,7 +1796,7 @@ static int wl12xx_setup(struct wl1271 *wl)
 	wl12xx_conf_init(wl);
 
 	if (!fref_param) {
-		priv->ref_clock = pdata->board_ref_clock;
+		priv->ref_clock = pdev_data->board_ref_clock;
 	} else {
 		if (!strcmp(fref_param, "19.2"))
 			priv->ref_clock = WL12XX_REFCLOCK_19;
@@ -1818,7 +1815,7 @@ static int wl12xx_setup(struct wl1271 *wl)
 	}
 
 	if (!tcxo_param) {
-		priv->tcxo_clock = pdata->board_tcxo_clock;
+		priv->tcxo_clock = pdev_data->board_tcxo_clock;
 	} else {
 		if (!strcmp(tcxo_param, "19.2"))
 			priv->tcxo_clock = WL12XX_TCXOCLOCK_19_2;
