@@ -640,7 +640,7 @@ static void brcmf_pcie_bus_console_init(struct brcmf_pciedev_info *devinfo)
 	addr = console->base_addr + BRCMF_CONSOLE_BUFSIZE_OFFSET;
 	console->bufsize = brcmf_pcie_read_tcm32(devinfo, addr);
 
-	brcmf_dbg(PCIE, "Console: base %x, buf %x, size %d\n",
+	brcmf_dbg(FWCON, "Console: base %x, buf %x, size %d\n",
 		  console->base_addr, console->buf_addr, console->bufsize);
 }
 
@@ -651,6 +651,9 @@ static void brcmf_pcie_bus_console_read(struct brcmf_pciedev_info *devinfo)
 	u32 addr;
 	u8 ch;
 	u32 newidx;
+
+	if (!BRCMF_FWCON_ON())
+		return;
 
 	console = &devinfo->shared.console;
 	addr = console->base_addr + BRCMF_CONSOLE_WRITEIDX_OFFSET;
@@ -673,7 +676,7 @@ static void brcmf_pcie_bus_console_read(struct brcmf_pciedev_info *devinfo)
 		}
 		if (ch == '\n') {
 			console->log_str[console->log_idx] = 0;
-			brcmf_dbg(PCIE, "CONSOLE: %s", console->log_str);
+			pr_debug("CONSOLE: %s", console->log_str);
 			console->log_idx = 0;
 		}
 	}
