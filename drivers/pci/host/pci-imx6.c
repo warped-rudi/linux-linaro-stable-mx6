@@ -57,6 +57,7 @@ struct imx6_pcie {
 	struct regmap		*iomuxc_gpr;
 	struct regulator	*pcie_phy_regulator;
 	void __iomem		*mem_base;
+	int			link_gen;
 };
 
 /* PCIe Root Complex registers (memory-mapped) */
@@ -494,11 +495,15 @@ static int imx6_pcie_start_link(struct pcie_port *pp)
 	if (ret)
 		goto out;
 
-	/* Allow Gen2 mode after the link is up. */
-	tmp = readl(pp->dbi_base + PCIE_RC_LCR);
-	tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
-	tmp |= PCIE_RC_LCR_MAX_LINK_SPEEDS_GEN2;
-	writel(tmp, pp->dbi_base + PCIE_RC_LCR);
+	if (imx6_pcie->link_gen == 2) {
+		/* Allow Gen2 mode after the link is up. */
+		tmp = readl(pp->dbi_base + PCIE_RC_LCR);
+		tmp &= ~PCIE_RC_LCR_MAX_LINK_SPEEDS_MASK;
+		tmp |= PCIE_RC_LCR_MAX_LINK_SPEEDS_GEN2;
+		writel(tmp, pp->dbi_base + PCIE_RC_LCR);
+	} else {
+		dev_info(pp->dev, "Link: Gen2 disabled\n");
+	}
 
 	/*
 	 * Start Directed Speed Change so the best possible speed both link
@@ -547,7 +552,7 @@ out:
 		release_bus_freq(BUS_FREQ_HIGH);
 	} else {
 		tmp = readl(pp->dbi_base + 0x80);
-		dev_dbg(pp->dev, "Link up, Gen=%i\n", (tmp >> 16) & 0xf);
+		dev_info(pp->dev, "Link up, Gen=%i\n", (tmp >> 16) & 0xf);
 	}
 
 	return ret;
@@ -1263,6 +1268,12 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
 			pr_info("pcie ep: Data transfer is failed.\n");
 		} /* end of self io test. */
 	} else {
+		/* Limit link speed */
+		ret = of_property_read_u32(pp->dev->of_node, "fsl,max-link-speed",
+					   &imx6_pcie->link_gen);
+       		if (ret)
+			imx6_pcie->link_gen = 1;
+
 		ret = imx6_add_pcie_port(pp, pdev);
 		if (ret < 0)
 			goto err;
