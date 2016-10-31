@@ -83,8 +83,6 @@ struct hdmi_cec_event {
 
 static LIST_HEAD(head);
 
-static int hdmi_cec_ready = 0;
-static int hdmi_cec_started;
 static int hdmi_cec_major;
 static struct class *hdmi_cec_class;
 static struct hdmi_cec_priv hdmi_cec_data;
@@ -314,7 +312,7 @@ static ssize_t hdmi_cec_write(struct file *file, const char __user *buf,
 		mutex_unlock(&hdmi_cec_data.lock);
 		return -EACCES;
 	}
-	/* Ensure that there is only one writer who is the only listener of tx_cec_queue */
+	/* Ensure that there is only one writer who is the unique listener of tx_cec_queue */
 	if (hdmi_cec_data.tx_answer != CEC_TX_AVAIL) {
 		mutex_unlock(&hdmi_cec_data.lock);
 		return -EBUSY;
@@ -358,12 +356,10 @@ static ssize_t hdmi_cec_write(struct file *file, const char __user *buf,
 	return ret;
 }
 
+
 void hdmi_cec_start_device(void)
 {
 	u8 val;
-
-	if (!hdmi_cec_ready || hdmi_cec_started)
-		return;
 
 	val = hdmi_readb(HDMI_MC_CLKDIS);
 	val &= ~HDMI_MC_CLKDIS_CECCLK_DISABLE;
@@ -377,20 +373,13 @@ void hdmi_cec_start_device(void)
 	hdmi_writeb(val, HDMI_CEC_MASK);
 	hdmi_writeb(val, HDMI_IH_MUTE_CEC_STAT0);
 	hdmi_cec_data.link_status = hdmi_readb(HDMI_PHY_STAT0) & 0x02;
-	mutex_lock(&hdmi_cec_data.lock);
 	hdmi_cec_data.cec_state = true;
-	mutex_unlock(&hdmi_cec_data.lock);
-
-	hdmi_cec_started = 1;
 }
 EXPORT_SYMBOL(hdmi_cec_start_device);
 
 void hdmi_cec_stop_device(void)
 { 
 	u8 val;
-
-	if (!hdmi_cec_ready || !hdmi_cec_started)
-		return;
 
 	hdmi_writeb(0x10, HDMI_CEC_CTRL);
 	val = HDMI_IH_CEC_STAT0_WAKEUP | HDMI_IH_CEC_STAT0_ERROR_FOLL | HDMI_IH_CEC_STAT0_ERROR_INIT | HDMI_IH_CEC_STAT0_ARB_LOST | \
@@ -401,11 +390,7 @@ void hdmi_cec_stop_device(void)
 	val = hdmi_readb(HDMI_MC_CLKDIS);
 	val |= HDMI_MC_CLKDIS_CECCLK_DISABLE;
 	hdmi_writeb(val, HDMI_MC_CLKDIS);
-	mutex_lock(&hdmi_cec_data.lock);
 	hdmi_cec_data.cec_state = false;
-	mutex_unlock(&hdmi_cec_data.lock);
-
-	hdmi_cec_started = 0;
 }
 EXPORT_SYMBOL(hdmi_cec_stop_device);
 
@@ -579,7 +564,6 @@ static int hdmi_cec_dev_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&hdmi_cec_data.hdmi_cec_work, mxc_hdmi_cec_worker);
 
 	dev_info(&pdev->dev, "HDMI CEC initialized\n");
-	hdmi_cec_ready = 1;
 	goto out;
 
 err_out_class:
