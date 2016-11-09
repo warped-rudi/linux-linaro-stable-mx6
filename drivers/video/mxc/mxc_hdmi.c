@@ -212,7 +212,6 @@ static bool hdmi_inited;
 static bool hdcp_init;
 
 extern const struct fb_videomode mxc_cea_mode[64];
-extern void mxc_hdmi_cec_handle(u16 cec_stat);
 
 extern int mxcfb_blank(int blank, struct fb_info *info);
 
@@ -2204,7 +2203,8 @@ static void hotplug_worker(struct work_struct *work)
 			sprintf(event_string, "EVENT=plugin");
 			kobject_uevent_env(&hdmi->pdev->dev.kobj, KOBJ_CHANGE, envp);
 #ifdef CONFIG_MXC_HDMI_CEC
-			mxc_hdmi_cec_handle(0x80);
+			if (hdmi->edid_cfg.hdmi_cap)
+				hdmi_cec_hpd_changed(1);
 #endif
 		} else {
 			/* Plugout event */
@@ -2216,7 +2216,8 @@ static void hotplug_worker(struct work_struct *work)
 			sprintf(event_string, "EVENT=plugout");
 			kobject_uevent_env(&hdmi->pdev->dev.kobj, KOBJ_CHANGE, envp);
 #ifdef CONFIG_MXC_HDMI_CEC
-			mxc_hdmi_cec_handle(0x100);
+			if (hdmi->edid_cfg.hdmi_cap)
+				hdmi_cec_hpd_changed(0);
 #endif
 		}
 	}

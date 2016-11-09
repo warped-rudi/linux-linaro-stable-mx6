@@ -64,5 +64,6 @@ int check_hdmi_state(void);
 
 void hdmi_cec_start_device(void);
 void hdmi_cec_stop_device(void);
+void hdmi_cec_hpd_changed(unsigned int state);
 
 #endif
