@@ -880,7 +880,7 @@ static int imx_setup_ufcr(struct imx_port *sport, unsigned int mode)
 	unsigned int val;
 	unsigned int rx_fifo_trig;
 
-	if (uart_console(&sport->port))
+	if (uart_console(&sport->port) || ( sport->port.flags & UPF_LOW_LATENCY))
 		rx_fifo_trig = RXTL;
 	else
 		rx_fifo_trig = RXTL_UART;
@@ -1221,7 +1221,8 @@ static int imx_startup(struct uart_port *port)
 
 	/* Can we enable the DMA support? */
 	if (is_imx6q_uart(sport) && !uart_console(port)
-		&& !sport->dma_is_inited)
+		&& !sport->dma_is_inited
+		&& !(sport->port.flags & UPF_LOW_LATENCY))
 		imx_uart_dma_init(sport);
 
 	if (sport->dma_is_inited) {
